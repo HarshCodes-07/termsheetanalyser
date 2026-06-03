@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/lib/site";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Termsheet Analyser — understand before you sign",
-    short_name: "Termsheet Analyser",
-    description:
-      "AI-powered termsheet analyser for founders. Get red flags, green flags, a safety score, and negotiation notes in plain english.",
+    name: SITE_TITLE,
+    short_name: SITE_NAME,
+    description: SITE_DESCRIPTION,
     start_url: "/",
     display: "standalone",
     background_color: "#fbf7f2",
@@ -16,18 +16,6 @@ export default function manifest(): MetadataRoute.Manifest {
         src: "/favicon.ico",
         sizes: "any",
         type: "image/x-icon",
-      },
-      {
-        src: "/logo.jpeg",
-        sizes: "1024x1024",
-        type: "image/jpeg",
-        purpose: "any",
-      },
-      {
-        src: "/logo.jpeg",
-        sizes: "1024x1024",
-        type: "image/jpeg",
-        purpose: "maskable",
       },
     ],
   };

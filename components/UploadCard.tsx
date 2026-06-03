@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { GeminiDisclosure } from "@/components/GeminiDisclosure";
+import { MAX_TERMSHEET_CHARS } from "@/lib/constants";
 
 export interface UploadCardProps {
   onFileSelected: (file: File) => void;
@@ -12,6 +14,7 @@ export interface UploadCardProps {
   pastedLength?: number;
   error?: string | null;
   busy?: boolean;
+  limitReached?: boolean;
 }
 
 const ACCEPTED =
@@ -33,6 +36,7 @@ export function UploadCard({
   pastedLength = 0,
   error,
   busy,
+  limitReached,
 }: UploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -42,13 +46,25 @@ export function UploadCard({
   const [pasteText, setPasteText] = useState("");
   const [mode, setMode] = useState<"file" | "paste">("file");
 
+  const pasteOverLimit = pastedLength > MAX_TERMSHEET_CHARS;
+
   function handleFile(file: File) {
     setFileMeta({ name: file.name, size: file.size });
     onFileSelected(file);
   }
 
   return (
-    <div className="card-soft p-6 sm:p-8">
+    <section
+      id="upload"
+      aria-labelledby="upload-heading"
+      className="card-soft p-6 sm:p-8 scroll-mt-24"
+    >
+      <h2
+        id="upload-heading"
+        className="text-[18px] sm:text-[20px] font-semibold tracking-tight mb-5"
+      >
+        Upload your termsheet
+      </h2>
       <div className="flex items-center gap-1 mb-5 text-sm">
         <button
           type="button"
@@ -157,11 +173,38 @@ export function UploadCard({
             placeholder="Paste the termsheet text here…"
             className="w-full min-h-[220px] rounded-2xl border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)]/40 p-4 text-sm leading-relaxed font-mono placeholder:text-[color:var(--color-muted)]/70 focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent-ring)] focus:border-[color:var(--color-accent)]"
           />
-          <div className="mt-2 text-xs text-[color:var(--color-muted)]">
-            {pastedLength > 0
-              ? `${pastedLength.toLocaleString()} characters`
-              : "Paste at least a few clauses. The more context, the sharper the analysis."}
+          <div
+            className={`mt-2 text-xs ${
+              pasteOverLimit
+                ? "text-[color:var(--color-warning)]"
+                : "text-[color:var(--color-muted)]"
+            }`}
+          >
+            {pastedLength > 0 ? (
+              <>
+                {Math.min(pastedLength, MAX_TERMSHEET_CHARS).toLocaleString()}
+                {pasteOverLimit && (
+                  <>
+                    {" "}
+                    / {MAX_TERMSHEET_CHARS.toLocaleString()} — only the first{" "}
+                    {MAX_TERMSHEET_CHARS.toLocaleString()} characters will be
+                    analysed
+                  </>
+                )}
+                {!pasteOverLimit &&
+                  pastedLength <= MAX_TERMSHEET_CHARS &&
+                  ` characters (max ${MAX_TERMSHEET_CHARS.toLocaleString()})`}
+              </>
+            ) : (
+              "Paste at least a few clauses. The more context, the sharper the analysis."
+            )}
           </div>
+        </div>
+      )}
+
+      {limitReached && (
+        <div className="mt-4 rounded-lg border border-[color:var(--color-warning)]/30 bg-[color:var(--color-warning-soft)] px-3 py-2.5 text-sm text-[color:var(--color-warning)]">
+          Daily limit reached — come back tomorrow for more free analyses.
         </div>
       )}
 
@@ -171,11 +214,16 @@ export function UploadCard({
         </div>
       )}
 
+      <div className="mt-5">
+        <GeminiDisclosure />
+      </div>
+
       <div className="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
         <button
           type="button"
           onClick={onUseSample}
-          className="btn-ghost inline-flex items-center justify-center gap-2 px-3.5 py-2 text-sm"
+          disabled={busy || limitReached}
+          className="btn-ghost inline-flex items-center justify-center gap-2 px-3.5 py-2 text-sm disabled:opacity-50"
         >
           <svg
             width="14"
@@ -197,8 +245,8 @@ export function UploadCard({
         <button
           type="button"
           onClick={onAnalyse}
-          disabled={!canAnalyse || busy}
-          className="btn-accent inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm"
+          disabled={!canAnalyse || busy || limitReached}
+          className="btn-accent inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm disabled:opacity-60"
         >
           {busy ? (
             <>
@@ -206,6 +254,8 @@ export function UploadCard({
               <span className="dot" />
               <span className="dot" />
             </>
+          ) : limitReached ? (
+            "Daily limit reached"
           ) : (
             <>
               Analyse termsheet
@@ -227,6 +277,6 @@ export function UploadCard({
           )}
         </button>
       </div>
-    </div>
+    </section>
   );
 }

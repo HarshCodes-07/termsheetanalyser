@@ -159,9 +159,9 @@ export function NotTermsheetView({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="card-soft p-5 sm:p-6">
-          <h3 className="text-sm uppercase tracking-wider text-[color:var(--color-muted)] font-medium">
+          <h2 className="text-sm uppercase tracking-wider text-[color:var(--color-muted)] font-medium">
             What we saw
-          </h3>
+          </h2>
           <p className="mt-3 text-[15px] leading-relaxed">
             {notTermsheet.documentLooksLike}
           </p>
@@ -194,9 +194,9 @@ export function NotTermsheetView({
         </div>
 
         <div className="card-soft p-5 sm:p-6">
-          <h3 className="text-sm uppercase tracking-wider text-[color:var(--color-muted)] font-medium">
+          <h2 className="text-sm uppercase tracking-wider text-[color:var(--color-muted)] font-medium">
             What to do next
-          </h3>
+          </h2>
           <ul className="mt-3 space-y-3">
             {notTermsheet.whatToDoNext.map((step, i) => (
               <li
@@ -225,9 +225,9 @@ export function NotTermsheetView({
         notTermsheet.shareableQuip.trim().length > 0 && (
           <div className="card-soft p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h3 className="text-sm uppercase tracking-wider text-[color:var(--color-muted)] font-medium">
+              <h2 className="text-sm uppercase tracking-wider text-[color:var(--color-muted)] font-medium">
                 Shareable one-liner
-              </h3>
+              </h2>
               <CopyButton text={notTermsheet.shareableQuip} />
             </div>
             <p className="text-[15px] leading-relaxed text-[color:var(--color-foreground)]/90">

@@ -10,7 +10,11 @@ const STAGES = [
   "Scoring founder-friendliness…",
 ];
 
-export function LoadingAnalysis() {
+interface Props {
+  onCancel?: () => void;
+}
+
+export function LoadingAnalysis({ onCancel }: Props) {
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
@@ -21,14 +25,32 @@ export function LoadingAnalysis() {
   }, []);
 
   return (
-    <div className="card-soft p-6 sm:p-8">
-      <div className="flex items-center gap-3">
-        <span className="dot" />
-        <span className="dot" />
-        <span className="dot" />
-        <span className="ml-2 text-sm font-medium text-[color:var(--color-foreground)]">
-          {STAGES[idx]}
-        </span>
+    <section
+      aria-labelledby="loading-status"
+      className="card-soft p-6 sm:p-8"
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="dot" />
+          <span className="dot" />
+          <span className="dot" />
+          <p
+            id="loading-status"
+            className="ml-2 text-sm font-medium text-[color:var(--color-foreground)] truncate"
+            aria-live="polite"
+          >
+            {STAGES[idx]}
+          </p>
+        </div>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="btn-ghost shrink-0 px-3 py-1.5 text-xs"
+          >
+            Cancel
+          </button>
+        )}
       </div>
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -50,6 +72,6 @@ export function LoadingAnalysis() {
       <div className="mt-6 text-xs text-[color:var(--color-muted)]">
         This usually takes 10–20 seconds.
       </div>
-    </div>
+    </section>
   );
 }

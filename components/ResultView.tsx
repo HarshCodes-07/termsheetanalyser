@@ -111,7 +111,10 @@ function TabBar({
   counts: { red: number; green: number; negotiation: number; missing: number };
 }) {
   return (
-    <div className="card-soft p-1.5 overflow-x-auto">
+    <nav
+      aria-label="Analysis sections"
+      className="card-soft p-1.5 overflow-x-auto"
+    >
       <div className="flex gap-1 min-w-max">
         {TABS.map((t) => {
           const n =
@@ -153,7 +156,7 @@ function TabBar({
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }
 
@@ -166,9 +169,9 @@ function SummaryTab({ analysis }: { analysis: Analysis }) {
   return (
     <div className="space-y-6">
       <div className="card-soft p-6 sm:p-8">
-        <h3 className="text-sm uppercase tracking-wider text-[color:var(--color-muted)] font-medium">
+        <h2 className="text-sm uppercase tracking-wider text-[color:var(--color-muted)] font-medium">
           Plain english summary
-        </h3>
+        </h2>
         <div className="mt-3 space-y-3 text-[15px] leading-relaxed">
           {paragraphs.length > 0 ? (
             paragraphs.map((p, i) => <p key={i}>{p}</p>)

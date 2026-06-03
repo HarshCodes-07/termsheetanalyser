@@ -77,11 +77,19 @@ export interface NotTermsheet {
 
 export type AnalyseSource = "gemini" | "sample";
 
+export interface UsageInfo {
+  used: number;
+  limit: number;
+  remaining: number;
+  resetsAt: string;
+}
+
 export interface AnalysisResponse {
   kind: "analysis";
   analysis: Analysis;
   source: AnalyseSource;
   note?: string;
+  usage?: UsageInfo;
 }
 
 export interface NotTermsheetResponse {
@@ -89,6 +97,7 @@ export interface NotTermsheetResponse {
   notTermsheet: NotTermsheet;
   source: AnalyseSource;
   note?: string;
+  usage?: UsageInfo;
 }
 
 export type AnalyseResponse = AnalysisResponse | NotTermsheetResponse;

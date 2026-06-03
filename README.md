@@ -1,6 +1,6 @@
 # Termsheet Analyser
 
-A founder-friendly Next.js prototype that analyses a startup termsheet with Gemini and returns:
+A founder-friendly Next.js app that analyses startup termsheets with Gemini and returns:
 
 - a 0–100 safety score
 - red flags (with severity)
@@ -9,15 +9,13 @@ A founder-friendly Next.js prototype that analyses a startup termsheet with Gemi
 - negotiation points with suggested clause language
 - shareable copy for Twitter / LinkedIn / WhatsApp
 
-No auth, no database, no backend besides two Next.js API routes. Everything runs locally.
-
 ## Tech
 
 - Next.js 16 (App Router) + React 19
-- TypeScript
+- TypeScript + Zod validation
 - Tailwind CSS v4
-- `pdf-parse` v2 for PDF text extraction on the server
-- Gemini API (`gemini-2.5-flash`) via `generativelanguage.googleapis.com`
+- `pdf-parse` v2 for PDF text extraction
+- Gemini API (`gemini-2.5-flash`) via `x-goog-api-key` header
 
 ## Requirements
 
@@ -27,93 +25,55 @@ No auth, no database, no backend besides two Next.js API routes. Everything runs
 ## Setup
 
 ```bash
-nvm use 22      # or: nvm install 22 && nvm use 22
+nvm use 22
+cp .env.example .env.local
+# Add GEMINI_API_KEY and RATE_LIMIT_SECRET
 npm install
 npm run dev
 ```
 
 Open http://localhost:3000.
 
-## Gemini API key
+## Environment variables
 
-The prototype ships with a **hardcoded placeholder** key, as requested:
+| Variable | Required | Description |
+| -------- | -------- | ----------- |
+| `GEMINI_API_KEY` | Production | Google Gemini API key (server-only) |
+| `RATE_LIMIT_SECRET` | Production | Signs daily usage cookies (`openssl rand -base64 32`) |
+| `NEXT_PUBLIC_SITE_URL` | Recommended | Canonical URL for SEO/sitemap |
+| `GOOGLE_SITE_VERIFICATION` | Optional | Search Console verification |
 
-```ts
-// app/api/analyse/route.ts
-const GEMINI_API_KEY = "xyz";
-```
+**Development:** If `GEMINI_API_KEY` is missing or a placeholder, sample analysis is returned (dev only). Production returns 503 without a valid key.
 
-Because the placeholder is not a real key, the analyse route detects this and returns a realistic **sample analysis** so the full UI (score card, tabs, flags, negotiation language, share cards) is fully testable end-to-end.
+## Daily usage limit
 
-To get real analyses:
+Each browser gets **3 free analyses per day** (UTC midnight reset), enforced via a signed HttpOnly cookie. The UI shows remaining analyses with a progress indicator. Failed Gemini calls refund the slot.
 
-1. Get a Gemini API key from Google AI Studio.
-2. Replace `"xyz"` in `app/api/analyse/route.ts` with your real key.
-3. Restart `npm run dev`.
+## Security
 
-If the real API call fails for any reason (network, quota, schema mismatch), the route gracefully falls back to the sample analysis so the UI never breaks.
-
-> For production you’d move the key to an env var and out of source control. This is a local prototype.
+- Security headers (HSTS, X-Frame-Options, nosniff, etc.)
+- Request body size limits
+- PDF magic-byte validation + parse timeout
+- Zod schema validation on Gemini responses
+- Sanitized error messages (no internal leaks)
+- Gemini key sent via header, not query string
 
 ## How it works
 
-1. The user lands on `/` and either:
-   - drags a `.pdf` / `.txt` into the upload card,
-   - pastes termsheet text, or
-   - clicks **Try sample termsheet**.
-2. Clicking **Analyse termsheet**:
-   - For `.txt`: read in the browser via `File.text()`.
-   - For `.pdf`: POST to `POST /api/extract` which uses `pdf-parse` on the server to get text.
-3. The extracted text is POSTed to `POST /api/analyse` with `{ termsheetText: string }`.
-4. The route builds the master prompt and calls Gemini with `responseMimeType: "application/json"`, then validates the schema and returns it to the client.
-5. The client renders the tabbed result view.
+1. Upload PDF/TXT, paste text, or try the sample termsheet.
+2. Text is extracted (`/api/extract` for PDFs) and sent to `/api/analyse`.
+3. Gemini returns structured JSON; validated and rendered in tabbed UI.
+4. Usage tracked at `/api/usage`.
 
-## File layout
+## Pages
 
-```
-app/
-  api/
-    analyse/route.ts   # Gemini call + sample fallback
-    extract/route.ts   # PDF → text via pdf-parse
-  layout.tsx
-  page.tsx             # landing + upload + result state machine
-  globals.css          # warm palette + orange accent design tokens
-components/
-  Header.tsx
-  UploadCard.tsx
-  LoadingAnalysis.tsx
-  ScoreCard.tsx
-  AnalysisSection.tsx
-  FlagCard.tsx          # RedFlagCard + GreenFlagCard
-  CopyButton.tsx
-  ResultView.tsx        # tabs: Summary / Red / Green / Negotiation / Missing / Share
-lib/
-  types.ts
-  prompt.ts             # master prompt
-  sample.ts             # sample termsheet + sample analysis
-```
-
-## File support
-
-| Type   | Supported | Notes                                              |
-| ------ | --------- | -------------------------------------------------- |
-| `.txt` | yes       | read client-side via `File.text()`                 |
-| `.pdf` | yes       | parsed server-side with `pdf-parse`                |
-| `.doc` | no        | TODO — upload is rejected with a friendly message  |
-| `.docx`| no        | TODO — same                                        |
-
-Max file size: 10MB (enforced on client + server).
+- `/` — main analyser
+- `/privacy` — privacy policy
+- `/terms` — terms of use
 
 ## Scripts
 
-- `npm run dev` — start the dev server
+- `npm run dev` — development server
 - `npm run build` — production build
-- `npm run start` — start the production server
+- `npm run start` — production server
 - `npm run lint` — ESLint
-
-## Notes / next steps
-
-- Add `.docx` support via `mammoth`.
-- Move the Gemini key to an env var.
-- Stream the Gemini response for a live-typing result view.
-- Persist past analyses locally via IndexedDB.

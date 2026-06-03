@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
+import { MAX_FILE_BYTES } from "@/lib/constants";
+import { extractPdfText } from "@/lib/pdf";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
-
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 export async function POST(request: Request) {
   let formData: FormData;
@@ -18,10 +18,7 @@ export async function POST(request: Request) {
 
   const file = formData.get("file");
   if (!file || !(file instanceof File)) {
-    return NextResponse.json(
-      { error: "No file uploaded." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
   }
 
   if (file.size > MAX_FILE_BYTES) {
@@ -32,8 +29,7 @@ export async function POST(request: Request) {
   }
 
   const name = file.name.toLowerCase();
-  const isPdf =
-    file.type === "application/pdf" || name.endsWith(".pdf");
+  const isPdf = file.type === "application/pdf" || name.endsWith(".pdf");
   const isTxt =
     file.type === "text/plain" ||
     name.endsWith(".txt") ||
@@ -48,40 +44,64 @@ export async function POST(request: Request) {
     if (isPdf) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      const { PDFParse } = await import("pdf-parse");
-      const parser = new PDFParse({ data: buffer });
+
+      let text: string;
       try {
-        const result = await parser.getText();
-        const text = (result.text ?? "").trim();
-        if (!text) {
+        text = await extractPdfText(buffer);
+      } catch (err) {
+        const code = err instanceof Error ? err.message : "";
+        if (code === "INVALID_PDF") {
           return NextResponse.json(
             {
               error:
-                "Could not extract readable text from this PDF. If it's scanned, try a text-based version or paste the text manually.",
+                "This file doesn't appear to be a valid PDF. Try a text-based PDF or paste the text manually.",
             },
             { status: 422 }
           );
         }
-        return NextResponse.json({ text, kind: "pdf" });
-      } finally {
-        await parser.destroy().catch(() => {});
+        if (code === "PDF_PARSE_TIMEOUT") {
+          return NextResponse.json(
+            {
+              error:
+                "PDF parsing took too long. Try a smaller file or paste the text manually.",
+            },
+            { status: 422 }
+          );
+        }
+        throw err;
       }
+
+      if (!text) {
+        return NextResponse.json(
+          {
+            error:
+              "Could not extract readable text from this PDF. If it's scanned, try a text-based version or paste the text manually.",
+          },
+          { status: 422 }
+        );
+      }
+      return NextResponse.json({ text, kind: "pdf" });
     }
 
     return NextResponse.json(
       {
         error:
-          "Unsupported file type. For this prototype, please upload a .pdf or .txt file. (DOC/DOCX coming soon.)",
+          "Unsupported file type. Please upload a .pdf or .txt file. (DOC/DOCX coming soon.)",
       },
       { status: 415 }
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[extract] error:", err);
     return NextResponse.json(
       {
-        error: `Could not extract text from the file. ${message}`,
+        error:
+          "Could not extract text from the file. Please try a different file or paste the text manually.",
       },
       { status: 500 }
     );
   }
+}
+
+export async function GET() {
+  return NextResponse.json({ error: "Method not allowed." }, { status: 405 });
 }
